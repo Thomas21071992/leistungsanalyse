@@ -5,146 +5,70 @@ import os
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="🏃 Leistungsdiagnostik Tool", layout="wide")
-st.title("🏃 Leistungsdiagnostik Tool mit Fortschritts- und Vergleichsanalyse")
+st.title("🏃 Leistungsdiagnostik Tool (50 m Sprint, Standweitsprung, Liegestütze)")
 
 # Eingabemaske
 name = st.text_input("Name", value="")
 alter = st.number_input("Alter", value=30, min_value=6, max_value=99)
 geschlecht = st.selectbox("Geschlecht", ["männlich", "weiblich"])
-sprint = st.number_input("30m Sprintzeit Handstoppung (in Sekunden)", value=4.5)
-sprung = st.number_input("Sprunghöhe (in cm)", value=50)
+sprint = st.number_input("50 m Sprintzeit (in Sekunden)", value=8.0)
+sprung = st.number_input("Standweitsprung (in cm)", value=180)
 liegestuetzen = st.number_input("Liegestütze am Stück", value=15)
 
-# Simulierte Vergleichsdaten (vereinfacht)
+# Vergleichswerte
 def durchschnittswerte(alter, geschlecht):
     if geschlecht == "männlich":
         return {
-            "sprint": 4.5 - 0.02 * max(0, 35 - alter),
-            "sprung": 45 + 0.5 * max(0, 35 - alter),
+            "sprint": 7.8 - 0.02 * max(0, 35 - alter),
+            "sprung": 180 + 1.0 * max(0, 35 - alter),
             "liegestuetzen": 12 + 0.3 * max(0, 35 - alter),
         }
     else:
         return {
-            "sprint": 4.7 - 0.015 * max(0, 35 - alter),
-            "sprung": 35 + 0.4 * max(0, 35 - alter),
+            "sprint": 8.2 - 0.015 * max(0, 35 - alter),
+            "sprung": 150 + 0.8 * max(0, 35 - alter),
             "liegestuetzen": 8 + 0.25 * max(0, 35 - alter),
         }
+
+# Bewertung
+bewertung = "Gut"
+if sprint < 7.5 and sprung > 200 and liegestuetzen > 25:
+    bewertung = "Sehr gut"
+elif sprint > 8.5 or sprung < 160 or liegestuetzen < 10:
+    bewertung = "Ausbaufähig"
+
+# Einheitenauswahl
+einheiten_sprint = 1
+einheiten_sprung = 1
+einheiten_liegestuetzen = 1
+
+if bewertung == "Ausbaufähig":
+    if sprint > 8.5:
+        einheiten_sprint = st.selectbox("Sprint - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
+    if sprung < 160:
+        einheiten_sprung = st.selectbox("Sprungkraft - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
+    if liegestuetzen < 10:
+        einheiten_liegestuetzen = st.selectbox("Liegestütze - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
 
 # CSV-Verwaltung
 log_file = "leistungs_log.csv"
 if os.path.exists(log_file):
     df = pd.read_csv(log_file)
 else:
-    df = pd.DataFrame(columns=["Name", "Datum", "Alter", "Geschlecht", "Sprintzeit", "Sprunghöhe", "Liegestütze", "Bewertung"])
-
-# Bewertung vorbereiten (ohne Button)
-bewertung = "Gut"
-if sprint < 4.2 and sprung > 60 and liegestuetzen > 25:
-    bewertung = "Sehr gut"
-elif sprint > 4.6 or sprung < 40 or liegestuetzen < 10:
-    bewertung = "Ausbaufähig"
-
-# Auswahl der Einheiten je Disziplin vor dem Button (wenn ausbaufähig)
-einheiten_sprint = 1
-einheiten_sprung = 1
-einheiten_liegestuetzen = 1
-
-if bewertung == "Ausbaufähig":
-    if sprint > 4.6:
-        einheiten_sprint = st.selectbox("Sprint - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
-    if sprung < 40:
-        einheiten_sprung = st.selectbox("Sprungkraft - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
-    if liegestuetzen < 10:
-        einheiten_liegestuetzen = st.selectbox("Liegestütze - Anzahl Trainingseinheiten pro Woche", [1, 2], index=0)
+    df = pd.DataFrame(columns=["Name", "Datum", "Alter", "Geschlecht", "Sprintzeit", "Sprungweite", "Liegestütze", "Bewertung"])
 
 if st.button("Analyse starten"):
     if not name:
         st.error("❗ Bitte gib deinen Namen ein.")
     else:
-        # Trainingsvorschläge erzeugen
-        trainingsvorschläge = []
-
-        if sprint > 4.6:
-            if einheiten_sprint == 1:
-                trainingsvorschläge.append("""
-                ### 🏃 Sprinttraining (1 Einheit/Woche)
-                - 5x 30m Sprints mit maximaler Intensität
-                - 3 Minuten Pause zwischen den Sprints
-                - Fokus auf explosiven Start und Technik
-                """)
-            else:
-                trainingsvorschläge.append("""
-                ### 🏃 Sprinttraining (2 Einheiten/Woche)
-                **Einheit 1:**
-                - 5x 30m Sprints maximal
-                - 3 Minuten Pause
-                - Technikfokus Start
-                                           
-                **Einheit 2:**
-                - 4x 60m Sprints im aeroben Bereich
-                - 5 Minuten Pause
-                - Laufökonomie und Entspannung
-                """)
-
-        if sprung < 40:
-            if einheiten_sprung == 1:
-                trainingsvorschläge.append("""
-                ### 🦵 Sprungkraft (1 Einheit/Woche)
-                - 3x10 Box Jumps
-                - 3x8 Tiefsprünge mit sofortigem Hochsprung
-                - 2x12 Bulgarian Split Squats
-                """)
-            else:
-                trainingsvorschläge.append("""
-                ### 🦵 Sprungkraft (2 Einheiten/Woche)
-                **Einheit 1:**
-                - 3x10 Box Jumps
-                - 3x8 Tiefsprünge mit Hochsprung
-                - Core-Stabilität: 3x 30 Sek. Planks
-                                           
-                **Einheit 2:**
-                - 3x12 Bulgarian Split Squats
-                - 3x10 einbeinige Kniebeugen
-                - Sprungkoordinationstraining (Seilspringen)
-                """)
-
-        if liegestuetzen < 10:
-            if einheiten_liegestuetzen == 1:
-                trainingsvorschläge.append("""
-                ### 💪 Liegestütze (1 Einheit/Woche)
-                - 3–5 Sätze Liegestütze bis fast Muskelversagen
-                - 3x8 Negativ-Liegestütze (4 Sek. Absenken)
-                - Core & Schulter: 3x 60 Sek. Plank
-                """)
-            else:
-                trainingsvorschläge.append("""
-                ### 💪 Liegestütze (2 Einheiten/Woche)
-                **Einheit 1:**
-                - 3x 5–8 Sätze Liegestütze bis Muskelversagen
-                - 3x8 Negativ-Liegestütze
-                - Schulterstabilisation: 3x 15 Sek. Schulter-Taps
-                                           
-                **Einheit 2:**
-                - 3x 12 Liegestütze mit Pausen
-                - 3x60 Sek. Planks
-                - Dynamische Core-Übungen (Russian Twists)
-                """)
-
-        # Bewertung speichern (wie vorher)
-        if sprint < 4.2 and sprung > 60 and liegestuetzen > 25:
-            bewertung = "Sehr gut"
-        elif sprint > 4.6 or sprung < 40 or liegestuetzen < 10:
-            bewertung = "Ausbaufähig"
-        else:
-            bewertung = "Gut"
-
+        # Speichern
         new_entry = {
             "Name": name,
             "Datum": datetime.now().strftime("%Y-%m-%d"),
             "Alter": alter,
             "Geschlecht": geschlecht,
             "Sprintzeit": sprint,
-            "Sprunghöhe": sprung,
+            "Sprungweite": sprung,
             "Liegestütze": liegestuetzen,
             "Bewertung": bewertung
         }
@@ -152,31 +76,116 @@ if st.button("Analyse starten"):
         df.to_csv(log_file, index=False)
         st.success(f"{name}, deine Bewertung: **{bewertung}** wurde gespeichert ✅")
 
-        # Ausgabe der Trainingsvorschläge
-        if trainingsvorschläge:
-            st.markdown("## 💡 Trainingsvorschläge zur Leistungssteigerung:")
-            for vorschlag in trainingsvorschläge:
-                st.markdown(vorschlag)
+        # Trainingsvorschläge
+        trainingsvorschläge = []
+
+        if bewertung == "Sehr gut":
+            st.markdown("## 🏋️ Allgemeiner Trainingsplan (2x pro Woche)")
+            st.markdown("""
+            ### 🏃 Sprint & Lauftechnik
+            - 4x 50 m Sprint mit 95% Intensität  
+            - 3x 30 m Technikstarts  
+            - 2x 80 m lockeres Sprinten
+
+            ### 🦵 Sprungkraft & Beine
+            - 3x10 Box Jumps  
+            - 3x10 einbeinige Squats  
+            - 3x20 Seilsprünge
+
+            ### 💪 Oberkörper & Core
+            - 3x max. Liegestütze  
+            - 3x8 Negativ-Liegestütze  
+            - 3x 60 Sek. Planks (vorn + Seite)
+
+            ➕ Bonus: 10 Min. Mobility & Stretching
+            """)
+        elif bewertung == "Ausbaufähig":
+            if sprint > 8.5:
+                if einheiten_sprint == 1:
+                    trainingsvorschläge.append("""
+                    ### 🏃 Sprinttraining (1x/Woche)
+                    - 5x 50m Sprint mit 90–95% Intensität  
+                    - 3 Min Pause  
+                    - Startübungen: Kniehub, Anfersen
+                    """)
+                else:
+                    trainingsvorschläge.append("""
+                    ### 🏃 Sprinttraining (2x/Woche)
+                    **Einheit 1:**  
+                    - 5x 50m Sprint maximal  
+                    - 4 Min Pause  
+                    - Technikstarts aus 3-Punkt-Position
+                    
+                    **Einheit 2:**  
+                    - 3x 80m Sprint locker  
+                    - 3x 30m Techniklauf (Videofeedback)
+                    """)
+
+            if sprung < 160:
+                if einheiten_sprung == 1:
+                    trainingsvorschläge.append("""
+                    ### 🦵 Standweitsprung (1x/Woche)
+                    - 4x5 Standweitsprünge  
+                    - 3x10 Box Jumps  
+                    - 3x15 Seilspringen
+                    """)
+                else:
+                    trainingsvorschläge.append("""
+                    ### 🦵 Standweitsprung (2x/Woche)
+                    **Einheit 1:**  
+                    - 4x5 Standweitsprünge  
+                    - 3x8 Tiefsprünge  
+                    - Core: 3x30 Sek. Plank
+                    
+                    **Einheit 2:**  
+                    - 3x12 Bulgarian Split Squats  
+                    - 3x Skater-Jumps  
+                    - 3x Seilspringen (Koordination)
+                    """)
+
+            if liegestuetzen < 10:
+                if einheiten_liegestuetzen == 1:
+                    trainingsvorschläge.append("""
+                    ### 💪 Liegestütze (1x/Woche)
+                    - 4 Sätze bis Erschöpfung  
+                    - 3x10 Negativ-Liegestütze  
+                    - 3x45 Sek. Plank
+                    """)
+                else:
+                    trainingsvorschläge.append("""
+                    ### 💪 Liegestütze (2x/Woche)
+                    **Einheit 1:**  
+                    - 5x max. Liegestütze  
+                    - 3x8 Negativ-Liegestütze  
+                    - Schulterstabi: 3x15 Sek. Taps
+                    
+                    **Einheit 2:**  
+                    - 3x12 Liegestütze mit Pausen  
+                    - 3x60 Sek. Plank  
+                    - Core: Russian Twists
+                    """)
+
+            st.markdown("## 💡 Trainingsvorschläge zur Verbesserung:")
+            for block in trainingsvorschläge:
+                st.markdown(block)
         else:
-            st.markdown("✅ Deine Leistungen sind sehr gut – weiter so!")
+            st.info("Deine Leistung ist solide – du kannst bei Bedarf gezielt trainieren oder deinen Zustand erhalten.")
 
         # Vergleichsdaten
         d = durchschnittswerte(alter, geschlecht)
 
-        # Visualisierung je Disziplin
-        st.markdown("## 📊 Vergleich mit Durchschnitt deiner Altersklasse")
-
+        st.markdown("## 📊 Vergleich mit Durchschnitt deiner Altersgruppe")
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.markdown("**30m Sprintzeit**")
+            st.markdown("**50 m Sprintzeit**")
             fig, ax = plt.subplots()
             ax.bar(["Du", "Ø"], [sprint, d["sprint"]], color=["skyblue", "gray"])
             ax.set_ylabel("Sekunden")
             st.pyplot(fig)
 
         with col2:
-            st.markdown("**Sprunghöhe**")
+            st.markdown("**Standweitsprung**")
             fig, ax = plt.subplots()
             ax.bar(["Du", "Ø"], [sprung, d["sprung"]], color=["orange", "gray"])
             ax.set_ylabel("cm")
@@ -189,10 +198,31 @@ if st.button("Analyse starten"):
             ax.set_ylabel("Wiederholungen")
             st.pyplot(fig)
 
-        # Verlauf anzeigen
-        st.markdown("## 🧾 Verlauf deiner Leistungen")
+        # Verlauf
+        st.markdown("## 📈 Verlauf deiner Einträge")
         user_df = df[df["Name"] == name].copy()
         st.dataframe(user_df.tail(5))
 
         if len(user_df) > 1:
-            st.line_chart(user_df.set_index("Datum")[["Sprintzeit", "Sprunghöhe", "Liegestütze"]])
+            st.line_chart(user_df.set_index("Datum")[["Sprintzeit", "Sprungweite", "Liegestütze"]])
+
+# 🔐 Adminbereich
+st.markdown("---")
+st.markdown("## 🔐 Adminbereich")
+
+admin_passwort = st.text_input("Admin-Passwort eingeben:", type="password")
+
+if admin_passwort == "sportadmin2025":
+    st.success("✅ Adminzugriff gewährt.")
+    
+    if st.button("📥 CSV herunterladen"):
+        st.download_button(
+            label="📄 Gesamte Leistungsdaten herunterladen",
+            data=df.to_csv(index=False).encode('utf-8'),
+            file_name="leistungs_log.csv",
+            mime="text/csv"
+        )
+else:
+    if admin_passwort:
+        st.error("❌ Falsches Passwort.")
+
